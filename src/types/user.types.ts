@@ -6,13 +6,30 @@ export interface User {
   created_at?: string;
 }
 
+export interface UpdateUserDto {
+  role?: string;
+  active?: boolean;
+}
+
 export interface AuthLoginDto {
   email: string;
-  password?: string;
+  password: string;
 }
 
 export interface AuthRegisterDto {
   email: string;
-  password?: string;
+  password: string;
   name?: string;
+}
+
+export interface AuthResetPasswordDto {
+  email: string;
+}
+
+export interface AuthUpdatePasswordDto {
+  password: string;
+}
+
+export interface AuthRefreshTokenDto {
+  refresh_token: string;
 }
