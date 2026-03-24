@@ -11,9 +11,7 @@ export class CategoriesService {
   ) {}
 
   async createCategory(dto: CreateCategoryDto): Promise<Category> {
-    const category = await this.repository.createCategory(dto);
-    await this.invalidateListCache();
-    return category;
+    return this.repository.createCategory(dto);
   }
 
   async getCategoryById(id: number): Promise<Category | null> {
@@ -39,20 +37,10 @@ export class CategoriesService {
   }
 
   async updateCategory(id: number, dto: UpdateCategoryDto): Promise<Category> {
-    const updated = await this.repository.updateCategory(id, dto);
-    
-    await this.redis.del(`category:${id}`);
-    await this.invalidateListCache();
-    return updated;
+    return this.repository.updateCategory(id, dto);
   }
 
   async deleteCategory(id: number): Promise<void> {
     await this.repository.deleteCategory(id);
-    await this.redis.del(`category:${id}`);
-    await this.invalidateListCache();
-  }
-
-  private async invalidateListCache() {
-    await this.redis.del(`categories:all`);
   }
 }

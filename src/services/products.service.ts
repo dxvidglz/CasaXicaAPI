@@ -11,9 +11,7 @@ export class ProductsService {
   ) {}
 
   async createProduct(dto: CreateProductDto): Promise<Product> {
-    const product = await this.repository.createProduct(dto);
-    await this.invalidateCache(product.categoryId);
-    return product;
+    return this.repository.createProduct(dto);
   }
 
   async getProductById(id: string): Promise<Product | null> {
@@ -41,35 +39,10 @@ export class ProductsService {
   }
 
   async updateProduct(id: string, dto: UpdateProductDto): Promise<Product> {
-    const previous = await this.getProductById(id);
-    const updated = await this.repository.updateProduct(id, dto);
-    
-    await this.redis.del(`product:${id}`);
-    
-    // Invalida cache de todos los listings si cambia datos básicos de despliegue
-    await this.invalidateCache(updated.categoryId);
-    
-    // Por si movimos el producto a otra categoría, doble limpieza!
-    if (previous && previous.categoryId !== updated.categoryId) {
-        await this.invalidateCache(previous.categoryId);
-    }
-    
-    return updated;
+    return this.repository.updateProduct(id, dto);
   }
 
   async deleteProduct(id: string): Promise<void> {
-    const product = await this.getProductById(id);
     await this.repository.deleteProduct(id);
-    
-    await this.redis.del(`product:${id}`);
-    if (product) await this.invalidateCache(product.categoryId);
-  }
-
-  /**
-   * Helper para purgar las listas pre-calculadas en Redis
-   */
-  private async invalidateCache(categoryId: number) {
-    await this.redis.del(`products:category:all`);
-    await this.redis.del(`products:category:${categoryId}`);
   }
 }

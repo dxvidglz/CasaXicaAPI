@@ -1,6 +1,5 @@
 import { Hono } from 'hono';
 import { createClient } from '@supabase/supabase-js';
-import { getRedisClient } from '../cache/redis.client';
 import { OrderSupabaseRepository } from '../repositories/supabase/order.supabase.repository';
 import { OrdersService } from '../services/orders.service';
 import { OrdersController } from '../controllers/orders.controller';
@@ -16,13 +15,9 @@ const ordersApp = new Hono<{ Bindings: CloudflareBindings; Variables: Variables 
 // Middleware de Inyección de Dependencias
 ordersApp.use('*', async (c, next) => {
   const supabase = createClient<Database>(c.env.SUPABASE_URL, c.env.SUPABASE_KEY);
-  const redis = getRedisClient({
-    UPSTASH_REDIS_REST_URL: c.env.UPSTASH_REDIS_REST_URL,
-    UPSTASH_REDIS_REST_TOKEN: c.env.UPSTASH_REDIS_REST_TOKEN,
-  });
 
   const repo = new OrderSupabaseRepository(supabase);
-  const service = new OrdersService(repo, redis);
+  const service = new OrdersService(repo);
   const controller = new OrdersController(service);
 
   c.set('ordersController', controller);

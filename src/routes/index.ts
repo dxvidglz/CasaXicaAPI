@@ -3,3 +3,4 @@ export { default as productsApp } from './products.routes';
 export { default as categoriesApp } from './categories.routes';
 export { default as usersApp } from './users.routes';
 export { default as transactionsApp } from './transactions.routes';
+export { default as webhooksApp } from './webhooks.routes';
