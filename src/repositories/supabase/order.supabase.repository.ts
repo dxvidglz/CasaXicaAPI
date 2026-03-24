@@ -1,6 +1,6 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 import { IOrderRepository } from '../interfaces/order.repository.interface';
-import { Order, CreateOrderDto, OrderStatus } from '../../types';
+import { Order, CreateOrderDto, OrderStatus, ItemStatus } from '../../types';
 import { handleSupabaseError } from '../../utils/error.handler';
 
 export class OrderSupabaseRepository implements IOrderRepository {
@@ -8,10 +8,8 @@ export class OrderSupabaseRepository implements IOrderRepository {
 
   async createOrder(orderDto: CreateOrderDto): Promise<Order> {
     const newOrderPayload = {
-      table_number: orderDto.tableNumber,
+      table_number: orderDto.tableNumber ?? null,
       waiter_id: orderDto.waiterId,
-      status: 'PENDING' as OrderStatus,
-      total: 0 // Se calcula mediante un trigger en DB basado en order_details
     };
 
     const { data: orderData, error: orderError } = await this.supabase
@@ -32,7 +30,6 @@ export class OrderSupabaseRepository implements IOrderRepository {
         quantity: item.quantity,
         notes: item.notes,
         item_status: 'PENDING',
-        unit_price: 0 // Valor transitorio. Un trigger jala el precio desde tabla products
       }));
 
       const { data: detailsData, error: detailsError } = await this.supabase
@@ -54,7 +51,6 @@ export class OrderSupabaseRepository implements IOrderRepository {
             variantsPayload.push({
               order_detail_id: insertedItem.id,
               variant_id: variantId,
-              price: 0 // Valor transitorio
             });
           });
         }
@@ -99,15 +95,9 @@ export class OrderSupabaseRepository implements IOrderRepository {
   async getOrdersByStatus(status: OrderStatus): Promise<Order[]> {
     const { data, error } = await this.supabase
       .from('orders')
-      .select(`
-        *,
-        order_details (
-          *,
-          order_details_variants (*)
-        )
-      `)
+      .select('*')
       .eq('status', status)
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: true });
 
     if (error) {
       handleSupabaseError(error, 'Error al listar orders');
@@ -116,17 +106,18 @@ export class OrderSupabaseRepository implements IOrderRepository {
     return (data || []).map(row => this.mapToDomain(row));
   }
 
-  async updateOrderStatus(id: string, status: OrderStatus): Promise<Order> {
+  async updateOrderItemStatus(orderId: string, itemId: number, status: ItemStatus): Promise<Order> {
     const { error } = await this.supabase
-      .from('orders')
-      .update({ status, updated_at: new Date().toISOString() })
-      .eq('id', id);
+      .from('order_details')
+      .update({ item_status: status })
+      .eq('id', itemId)
+      .eq('order_id', orderId);
 
     if (error) {
-      handleSupabaseError(error, 'Error al actualizar estado de orden');
+      handleSupabaseError(error, 'Error al actualizar estado del detalle de la orden');
     }
 
-    return this.getOrderById(id) as Promise<Order>;
+    return this.getOrderById(orderId) as Promise<Order>;
   }
 
   /**
@@ -137,25 +128,31 @@ export class OrderSupabaseRepository implements IOrderRepository {
     return {
       id: row.id,
       dailyFolio: row.daily_folio,
-      tableNumber: row.table_number,
+      ...(row.table_number != null && { tableNumber: row.table_number }),
       waiterId: row.waiter_id,
       status: row.status as OrderStatus,
       total: row.total,
       createdAt: row.created_at,
       updatedAt: row.updated_at,
-      items: (row.order_details || []).map((detail: any) => ({
-        id: detail.id,
-        productId: detail.product_id,
-        quantity: detail.quantity,
-        notes: detail.notes,
-        unitPrice: detail.unit_price,
-        itemStatus: detail.item_status,
-        variants: (detail.order_details_variants || []).map((v: any) => ({
-          id: v.id,
-          variantId: v.variant_id,
-          price: v.price
-        }))
-      }))
+      ...(row.order_details && {
+        items: row.order_details.map((detail: any) => {
+          const variants = (detail.order_details_variants || []).map((v: any) => ({
+            id: v.id,
+            variantId: v.variant_id,
+            price: v.price
+          }));
+
+          return {
+            id: detail.id,
+            productId: detail.product_id,
+            quantity: detail.quantity,
+            ...(detail.notes != null && { notes: detail.notes }),
+            unitPrice: detail.unit_price,
+            itemStatus: detail.item_status,
+            ...(variants.length > 0 && { variants })
+          };
+        })
+      })
     };
   }
 }

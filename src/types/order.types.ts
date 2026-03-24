@@ -22,7 +22,7 @@ export interface Order {
   dailyFolio?: number;
   tableNumber?: string;
   waiterId?: string;
-  items: OrderDetail[];
+  items?: OrderDetail[];
   status: OrderStatus;
   total: number;
   createdAt: string;
@@ -38,6 +38,6 @@ export interface CreateOrderDetailDto {
 
 export interface CreateOrderDto {
   tableNumber?: string;
-  waiterId?: string;
+  waiterId: string;
   items: CreateOrderDetailDto[];
 }

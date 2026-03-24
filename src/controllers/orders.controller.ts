@@ -1,5 +1,5 @@
 import { Context } from 'hono';
-import { CreateOrderDto, OrderStatus } from '../types';
+import { CreateOrderDto, OrderStatus, ItemStatus } from '../types';
 import { OrdersService } from '../services/orders.service';
 import { handleApiError, AppError } from '../utils/error.handler';
 
@@ -49,18 +49,19 @@ export class OrdersController {
     }
   }
 
-  async updateOrderStatus(c: Context) {
+  async updateOrderItemStatus(c: Context) {
     try {
-      const id = c.req.param('id');
-      if (!id) throw new AppError('Order ID is required', 400);
+      const orderId = c.req.param('orderId');
+      const itemId = c.req.param('itemId');
+      if (!orderId || !itemId) throw new AppError('Order ID and Item ID are required', 400);
       
-      const body = await c.req.json<{ status: OrderStatus }>();
+      const body = await c.req.json<{ status: ItemStatus }>();
       
       if (!body?.status) {
         throw new AppError('New status is required', 400);
       }
 
-      const result = await this.ordersService.updateOrderStatus(id, body.status);
+      const result = await this.ordersService.updateOrderItemStatus(orderId, Number(itemId), body.status);
       return c.json({ data: result }, 200);
     } catch (error: any) {
       return handleApiError(c, error);

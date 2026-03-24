@@ -1,5 +1,5 @@
 import { IOrderRepository } from '../repositories/interfaces/order.repository.interface';
-import { Order, CreateOrderDto, OrderStatus } from '../types';
+import { Order, CreateOrderDto, OrderStatus, ItemStatus } from '../types';
 import { Redis } from '@upstash/redis/cloudflare';
 
 export class OrdersService {
@@ -55,23 +55,17 @@ export class OrdersService {
     return orders;
   }
 
-  async updateOrderStatus(id: string, status: OrderStatus): Promise<Order> {
-    // 1. ESENCIAL: Obtener la orden antes de actualizar para saber en qué lista de estado estaba
-    const previousOrder = await this.getOrderById(id);
+  async updateOrderItemStatus(orderId: string, itemId: number, status: ItemStatus): Promise<Order> {    
+    // 1. Actualizamos en base de datos
+    const updatedOrder = await this.orderRepository.updateOrderItemStatus(orderId, itemId, status);
     
-    // 2. Actualizamos en base de datos
-    const updatedOrder = await this.orderRepository.updateOrderStatus(id, status);
-    
-    // 3. Actualizamos la caché individual pre-calentándola para consultas futuras
-    const cacheKey = `order:${id}`;
+    // 2. Actualizamos la caché individual pre-calentándola para consultas futuras
+    const cacheKey = `order:${orderId}`;
     await this.redis.set(cacheKey, updatedOrder, { ex: this.DEFAULT_CACHE_TTL });
     
-    // 4. INVALIDACIÓN DOBLE: Borrar el listado del estado "viejo" y el listado del estado "nuevo"
-    // Si no borras el viejo, la aplicación mostrará la orden duplicada (por ejemplo, en PENDING y en PREPARING a la vez).
-    if (previousOrder && previousOrder.status !== status) {
-      await this.redis.del(`orders:status:${previousOrder.status}`);
-    }
-    await this.redis.del(`orders:status:${status}`);
+    // 3. Ya no tenemos cambio de "OrderStatus", pero quizá el listado de este estado cambió en base a los items.
+    // Invalidamos el listado del estado actual de esta orden por precaución.
+    await this.redis.del(`orders:status:${updatedOrder.status}`);
     
     return updatedOrder;
   }
