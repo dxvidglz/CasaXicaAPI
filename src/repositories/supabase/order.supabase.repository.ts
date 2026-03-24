@@ -22,18 +22,16 @@ export class OrderSupabaseRepository implements IOrderRepository {
       handleSupabaseError(orderError, 'Error al crear la cabecera de la orden en Supabase');
     }
 
-    // Insertar los detalles iterando los items (tabla order_details)
+    // Insertar los detalles iterando los items (tabla order_items)
     if (orderDto.items && orderDto.items.length > 0) {
       const detailsPayload = orderDto.items.map(item => ({
         order_id: orderData.id,
         product_id: item.productId,
-        quantity: item.quantity,
-        notes: item.notes,
-        item_status: 'PENDING',
+        notes: item.notes
       }));
 
       const { data: detailsData, error: detailsError } = await this.supabase
-        .from('order_details')
+        .from('order_items')
         .insert(detailsPayload)
         .select();
 
@@ -41,7 +39,7 @@ export class OrderSupabaseRepository implements IOrderRepository {
         handleSupabaseError(detailsError, 'Error al crear los detalles de la orden');
       }
 
-      // Inserción Anidada de Variantes (tabla order_details_variants)
+      // Inserción Anidada de Variantes (tabla order_item_variants)
       // Recorremos los details insertados localizando si el DTO original propuso "variantIds"
       const variantsPayload: any[] = [];
       detailsData?.forEach((insertedItem, index) => {
@@ -49,7 +47,7 @@ export class OrderSupabaseRepository implements IOrderRepository {
         if (originalDtoItem.variantIds && originalDtoItem.variantIds.length > 0) {
           originalDtoItem.variantIds.forEach(variantId => {
             variantsPayload.push({
-              order_detail_id: insertedItem.id,
+              order_item_id: insertedItem.id,
               variant_id: variantId,
             });
           });
@@ -58,7 +56,7 @@ export class OrderSupabaseRepository implements IOrderRepository {
 
       if (variantsPayload.length > 0) {
         const { error: variantsError } = await this.supabase
-          .from('order_details_variants')
+          .from('order_item_variants')
           .insert(variantsPayload);
 
         if (variantsError) {
@@ -71,14 +69,14 @@ export class OrderSupabaseRepository implements IOrderRepository {
   }
 
   async getOrderById(id: string): Promise<Order | null> {
-    // PostgREST Joins: Traemos las órdenes con sus order_details anidados, y estos con sus order_details_variants
+    // PostgREST Joins: Traemos las órdenes con sus order_items anidados, y estos con sus order_item_variants
     const { data, error } = await this.supabase
       .from('orders')
       .select(`
         *,
-        order_details (
+        order_items (
           *,
-          order_details_variants (*)
+          order_item_variants (*)
         )
       `)
       .eq('id', id)
@@ -106,10 +104,10 @@ export class OrderSupabaseRepository implements IOrderRepository {
     return (data || []).map(row => this.mapToDomain(row));
   }
 
-  async updateOrderItemStatus(orderId: string, itemId: number, status: ItemStatus): Promise<Order> {
+  async updateOrderItemStatus(orderId: string, itemId: string, status: ItemStatus): Promise<Order> {
     const { error } = await this.supabase
-      .from('order_details')
-      .update({ item_status: status })
+      .from('order_items')
+      .update({ status: status })
       .eq('id', itemId)
       .eq('order_id', orderId);
 
@@ -134,9 +132,9 @@ export class OrderSupabaseRepository implements IOrderRepository {
       total: row.total,
       createdAt: row.created_at,
       updatedAt: row.updated_at,
-      ...(row.order_details && {
-        items: row.order_details.map((detail: any) => {
-          const variants = (detail.order_details_variants || []).map((v: any) => ({
+      ...(row.order_items && {
+        items: row.order_items.map((detail: any) => {
+          const variants = (detail.order_item_variants || []).map((v: any) => ({
             id: v.id,
             variantId: v.variant_id,
             price: v.price
@@ -145,10 +143,9 @@ export class OrderSupabaseRepository implements IOrderRepository {
           return {
             id: detail.id,
             productId: detail.product_id,
-            quantity: detail.quantity,
             ...(detail.notes != null && { notes: detail.notes }),
             unitPrice: detail.unit_price,
-            itemStatus: detail.item_status,
+            status: detail.status as ItemStatus,
             ...(variants.length > 0 && { variants })
           };
         })

@@ -55,7 +55,7 @@ export class OrdersService {
     return orders;
   }
 
-  async updateOrderItemStatus(orderId: string, itemId: number, status: ItemStatus): Promise<Order> {    
+  async updateOrderItemStatus(orderId: string, itemId: string, status: ItemStatus): Promise<Order> {    
     // 1. Actualizamos en base de datos
     const updatedOrder = await this.orderRepository.updateOrderItemStatus(orderId, itemId, status);
     

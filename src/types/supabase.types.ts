@@ -54,83 +54,83 @@ export type Database = {
         }
         Relationships: []
       }
-      order_details: {
+      order_item_variants: {
         Row: {
-          id: number
-          item_status: Database["public"]["Enums"]["status_enum"]
-          notes: string
-          order_id: string
-          product_id: string
-          quantity: number
-          unit_price: number
+          id: string
+          order_item_id: string
+          price: number
+          variant_id: string
         }
         Insert: {
-          id?: number
-          item_status?: Database["public"]["Enums"]["status_enum"]
-          notes: string
-          order_id: string
-          product_id: string
-          quantity?: number
-          unit_price: number
+          id?: string
+          order_item_id: string
+          price: number
+          variant_id: string
         }
         Update: {
-          id?: number
-          item_status?: Database["public"]["Enums"]["status_enum"]
-          notes?: string
-          order_id?: string
-          product_id?: string
-          quantity?: number
-          unit_price?: number
+          id?: string
+          order_item_id?: string
+          price?: number
+          variant_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: "order_details_order_id_foreign"
+            foreignKeyName: "order_item_variants_order_items_id_foreign"
+            columns: ["order_item_id"]
+            isOneToOne: false
+            referencedRelation: "order_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_item_variants_variant_id_foreign"
+            columns: ["variant_id"]
+            isOneToOne: false
+            referencedRelation: "product_variants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      order_items: {
+        Row: {
+          id: string
+          notes: string | null
+          order_id: string
+          product_id: string
+          status: Database["public"]["Enums"]["status_enum"]
+          unit_price: number
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          notes?: string | null
+          order_id: string
+          product_id: string
+          status?: Database["public"]["Enums"]["status_enum"]
+          unit_price: number
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          notes?: string | null
+          order_id?: string
+          product_id?: string
+          status?: Database["public"]["Enums"]["status_enum"]
+          unit_price?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_items_order_id_foreign"
             columns: ["order_id"]
             isOneToOne: false
             referencedRelation: "orders"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "order_details_product_id_foreign"
+            foreignKeyName: "order_items_product_id_foreign"
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "products"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      order_details_variants: {
-        Row: {
-          id: number
-          order_detail_id: number
-          price: number
-          variant_id: string
-        }
-        Insert: {
-          id?: number
-          order_detail_id?: number
-          price: number
-          variant_id: string
-        }
-        Update: {
-          id?: number
-          order_detail_id?: number
-          price?: number
-          variant_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "order_details_variants_order_detail_id_foreign"
-            columns: ["order_detail_id"]
-            isOneToOne: false
-            referencedRelation: "order_details"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "order_details_variants_variant_id_foreign"
-            columns: ["variant_id"]
-            isOneToOne: false
-            referencedRelation: "product_variants"
             referencedColumns: ["id"]
           },
         ]
@@ -141,7 +141,7 @@ export type Database = {
           daily_folio: number
           id: string
           status: Database["public"]["Enums"]["status_enum"]
-          table_number: string
+          table_number: string | null
           total: number
           updated_at: string
           waiter_id: string
@@ -151,7 +151,7 @@ export type Database = {
           daily_folio?: number
           id?: string
           status?: Database["public"]["Enums"]["status_enum"]
-          table_number: string
+          table_number?: string | null
           total?: number
           updated_at?: string
           waiter_id: string
@@ -161,7 +161,7 @@ export type Database = {
           daily_folio?: number
           id?: string
           status?: Database["public"]["Enums"]["status_enum"]
-          table_number?: string
+          table_number?: string | null
           total?: number
           updated_at?: string
           waiter_id?: string
@@ -186,7 +186,7 @@ export type Database = {
         }
         Insert: {
           available?: boolean
-          id: string
+          id?: string
           name: string
           price_override: number
           product_id: string
@@ -218,8 +218,8 @@ export type Database = {
         }
         Insert: {
           available?: boolean
-          category_id?: number
-          id: string
+          category_id: number
+          id?: string
           name: string
           price: number
         }
@@ -281,21 +281,21 @@ export type Database = {
           created_at: string
           id: string
           name: string
-          role: string
+          role: Database["public"]["Enums"]["role_enum"]
         }
         Insert: {
           active?: boolean
           created_at?: string
-          id?: string
+          id: string
           name: string
-          role: string
+          role?: Database["public"]["Enums"]["role_enum"]
         }
         Update: {
           active?: boolean
           created_at?: string
           id?: string
           name?: string
-          role?: string
+          role?: Database["public"]["Enums"]["role_enum"]
         }
         Relationships: []
       }
@@ -304,11 +304,19 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      reset_daily_folio: { Args: never; Returns: undefined }
+      update_order_total: { Args: { p_order_id: string }; Returns: undefined }
     }
     Enums: {
       payment_method_enum: "CASH" | "CARD" | "TRANSFER"
-      status_enum: "PENDING" | "PREPARING" | "READY" | "DELIVERED" | "CANCELLED"
+      role_enum: "ADMIN" | "WAITER" | "KITCHEN"
+      status_enum:
+        | "PENDING"
+        | "PREPARING"
+        | "READY"
+        | "DELIVERED"
+        | "CLOSED"
+        | "CANCELLED"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -440,7 +448,15 @@ export const Constants = {
   public: {
     Enums: {
       payment_method_enum: ["CASH", "CARD", "TRANSFER"],
-      status_enum: ["PENDING", "PREPARING", "READY", "DELIVERED", "CANCELLED"],
+      role_enum: ["ADMIN", "WAITER", "KITCHEN"],
+      status_enum: [
+        "PENDING",
+        "PREPARING",
+        "READY",
+        "DELIVERED",
+        "CLOSED",
+        "CANCELLED",
+      ],
     },
   },
 } as const

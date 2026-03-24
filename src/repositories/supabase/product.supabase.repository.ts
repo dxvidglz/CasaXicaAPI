@@ -113,13 +113,15 @@ export class ProductSupabaseRepository implements IProductRepository {
         id: row.categories.id,
         name: row.categories.name
       } : undefined,
-      variants: (row.product_variants || []).map((v: any) => ({
-        id: v.id,
-        productId: v.product_id,
-        name: v.name,
-        priceOverride: v.price_override,
-        available: v.available
-      } as ProductVariant))
+      ...(row.product_variants?.length > 0 && {
+        variants: row.product_variants.map((v: any) => ({
+          id: v.id,
+          productId: v.product_id,
+          name: v.name,
+          priceOverride: v.price_override,
+          available: v.available
+        } as ProductVariant))
+      })
     };
   }
 }

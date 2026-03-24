@@ -1,20 +1,19 @@
-export type OrderStatus = 'PENDING' | 'PREPARING' | 'READY' | 'DELIVERED' | 'CANCELLED';
+export type OrderStatus = 'PENDING' | 'PREPARING' | 'READY' | 'DELIVERED' | 'CANCELLED' | 'CLOSED';
 export type ItemStatus = 'PENDING' | 'PREPARING' | 'READY' | 'DELIVERED' | 'CANCELLED';
 
-export interface OrderDetailVariant {
+export interface OrderItemVariant {
   id?: number;
   variantId: string;
   price: number;
 }
 
-export interface OrderDetail {
+export interface OrderItem {
   id?: number;
   productId: string;
-  quantity: number;
   notes?: string;
   unitPrice: number;
-  itemStatus?: ItemStatus;
-  variants?: OrderDetailVariant[];
+  status?: ItemStatus;
+  variants?: OrderItemVariant[];
 }
 
 export interface Order {
@@ -22,16 +21,15 @@ export interface Order {
   dailyFolio?: number;
   tableNumber?: string;
   waiterId?: string;
-  items?: OrderDetail[];
+  items?: OrderItem[];
   status: OrderStatus;
   total: number;
   createdAt: string;
   updatedAt?: string;
 }
 
-export interface CreateOrderDetailDto {
+export interface CreateOrderItemDto {
   productId: string;
-  quantity: number;
   notes?: string;
   variantIds?: string[];
 }
@@ -39,5 +37,5 @@ export interface CreateOrderDetailDto {
 export interface CreateOrderDto {
   tableNumber?: string;
   waiterId: string;
-  items: CreateOrderDetailDto[];
+  items: CreateOrderItemDto[];
 }

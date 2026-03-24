@@ -61,7 +61,7 @@ export class OrdersController {
         throw new AppError('New status is required', 400);
       }
 
-      const result = await this.ordersService.updateOrderItemStatus(orderId, Number(itemId), body.status);
+      const result = await this.ordersService.updateOrderItemStatus(orderId, itemId, body.status);
       return c.json({ data: result }, 200);
     } catch (error: any) {
       return handleApiError(c, error);
