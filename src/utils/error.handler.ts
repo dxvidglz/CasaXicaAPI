@@ -45,6 +45,11 @@ export const handleSupabaseError = (error: any, contextMessage: string): never =
     throw new AppError('Conflict: Relational constraint violation', 409, error);
   }
 
+  // 42501 = Insufficient permissions (RLS)
+  if (error.code === '42501') {
+    throw new AppError('Insufficient permissions', 403, error);
+  }
+
   // Fallback a 500 con el mensaje englobado
   throw new AppError(`${contextMessage}: ${error.message}`, 500, error);
 };
