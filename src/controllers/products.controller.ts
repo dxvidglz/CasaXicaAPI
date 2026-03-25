@@ -10,8 +10,8 @@ export class ProductsController {
     try {
       const body = await c.req.json<CreateProductDto>();
       
-      const result = await this.productsService.createProduct(body);
-      return c.json({ data: result }, 201);
+      await this.productsService.createProduct(body);
+      return c.json({ success: true }, 201);
     } catch (error: any) {
       return handleApiError(c, error);
     }
@@ -56,8 +56,8 @@ export class ProductsController {
         throw new AppError('No attributes sent to update', 400);
       }
 
-      const result = await this.productsService.updateProduct(id, body);
-      return c.json({ data: result }, 200);
+      await this.productsService.updateProduct(id, body);
+      return c.json({ success: true }, 200);
     } catch (error: any) {
       return handleApiError(c, error);
     }

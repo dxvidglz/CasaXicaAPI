@@ -18,8 +18,8 @@ export class TransactionsController {
         throw new AppError(`paymentMethod inválido. Debe ser: ${allowedMethods.join(', ')}`, 400);
       }
 
-      const result = await this.transactionsService.createTransaction(body);
-      return c.json({ data: result }, 201);
+      await this.transactionsService.createTransaction(body);
+      return c.json({ success: true }, 201);
     } catch (error: any) {
       return handleApiError(c, error);
     }

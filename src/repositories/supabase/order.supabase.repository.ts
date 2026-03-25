@@ -6,7 +6,7 @@ import { handleSupabaseError } from '../../utils/error.handler';
 export class OrderSupabaseRepository implements IOrderRepository {
   constructor(private readonly supabase: SupabaseClient) { }
 
-  async createOrder(orderDto: CreateOrderDto): Promise<Order> {
+  async createOrder(orderDto: CreateOrderDto): Promise<void> {
     const newOrderPayload = {
       table_number: orderDto.tableNumber ?? null,
       waiter_id: orderDto.waiterId,
@@ -15,12 +15,13 @@ export class OrderSupabaseRepository implements IOrderRepository {
     const { data: orderData, error: orderError } = await this.supabase
       .from('orders')
       .insert(newOrderPayload)
-      .select()
+      .select('id')
       .single();
 
     if (orderError) {
       handleSupabaseError(orderError, 'Error al crear la cabecera de la orden en Supabase');
     }
+    if (!orderData) return;
 
     // Insertar los detalles iterando los items (tabla order_items)
     if (orderDto.items && orderDto.items.length > 0) {
@@ -33,7 +34,7 @@ export class OrderSupabaseRepository implements IOrderRepository {
       const { data: detailsData, error: detailsError } = await this.supabase
         .from('order_items')
         .insert(detailsPayload)
-        .select();
+        .select('id');
 
       if (detailsError) {
         handleSupabaseError(detailsError, 'Error al crear los detalles de la orden');
@@ -64,8 +65,6 @@ export class OrderSupabaseRepository implements IOrderRepository {
         }
       }
     }
-
-    return this.getOrderById(orderData.id) as Promise<Order>;
   }
 
   async getOrderById(id: string): Promise<Order | null> {
@@ -104,7 +103,7 @@ export class OrderSupabaseRepository implements IOrderRepository {
     return (data || []).map(row => this.mapToDomain(row));
   }
 
-  async updateOrderItemStatus(orderId: string, itemId: string, status: ItemStatus): Promise<Order> {
+  async updateOrderItemStatus(orderId: string, itemId: string, status: ItemStatus): Promise<void> {
     const { error } = await this.supabase
       .from('order_items')
       .update({ status: status })
@@ -114,8 +113,6 @@ export class OrderSupabaseRepository implements IOrderRepository {
     if (error) {
       handleSupabaseError(error, 'Error al actualizar estado del detalle de la orden');
     }
-
-    return this.getOrderById(orderId) as Promise<Order>;
   }
 
   /**

@@ -9,9 +9,9 @@ export class OrdersController {
   async createOrder(c: Context) {
     try {
       const body = await c.req.json<CreateOrderDto>();
-      const result = await this.ordersService.createOrder(body);
+      await this.ordersService.createOrder(body);
       
-      return c.json({ data: result }, 201);
+      return c.json({ success: true }, 201);
     } catch (error: any) {
       return handleApiError(c, error);
     }
@@ -61,8 +61,8 @@ export class OrdersController {
         throw new AppError('New status is required', 400);
       }
 
-      const result = await this.ordersService.updateOrderItemStatus(orderId, itemId, body.status);
-      return c.json({ data: result }, 200);
+      await this.ordersService.updateOrderItemStatus(orderId, itemId, body.status);
+      return c.json({ success: true }, 200);
     } catch (error: any) {
       return handleApiError(c, error);
     }

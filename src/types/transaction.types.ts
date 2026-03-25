@@ -5,6 +5,7 @@ export interface Transaction {
   orderId: string;
   paymentMethod: PaymentMethod;
   amountPaid: number;
+  change: number;
   ticketFolio: number;
   paidAt: string;
 }

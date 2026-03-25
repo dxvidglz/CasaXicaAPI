@@ -1,6 +1,5 @@
 import { Hono } from 'hono';
 import { createClient } from '@supabase/supabase-js';
-import { getRedisClient } from '../cache/redis.client';
 import { TransactionSupabaseRepository } from '../repositories/supabase/transaction.supabase.repository';
 import { TransactionsService } from '../services/transactions.service';
 import { TransactionsController } from '../controllers/transactions.controller';
@@ -15,13 +14,9 @@ const transactionsApp = new Hono<{ Bindings: CloudflareBindings; Variables: Vari
 
 transactionsApp.use('*', async (c, next) => {
   const supabase = createClient<Database>(c.env.SUPABASE_URL, c.env.SUPABASE_KEY);
-  const redis = getRedisClient({
-    UPSTASH_REDIS_REST_URL: c.env.UPSTASH_REDIS_REST_URL,
-    UPSTASH_REDIS_REST_TOKEN: c.env.UPSTASH_REDIS_REST_TOKEN,
-  });
 
   const repo = new TransactionSupabaseRepository(supabase);
-  const service = new TransactionsService(repo, redis);
+  const service = new TransactionsService(repo);
   const controller = new TransactionsController(service);
 
   c.set('transactionsController', controller);

@@ -10,8 +10,8 @@ export class CategoriesService {
     private readonly redis: Redis
   ) {}
 
-  async createCategory(dto: CreateCategoryDto): Promise<Category> {
-    return this.repository.createCategory(dto);
+  async createCategory(dto: CreateCategoryDto): Promise<void> {
+    await this.repository.createCategory(dto);
   }
 
   async getCategoryById(id: number): Promise<Category | null> {
@@ -36,8 +36,8 @@ export class CategoriesService {
     return categories;
   }
 
-  async updateCategory(id: number, dto: UpdateCategoryDto): Promise<Category> {
-    return this.repository.updateCategory(id, dto);
+  async updateCategory(id: number, dto: UpdateCategoryDto): Promise<void> {
+    await this.repository.updateCategory(id, dto);
   }
 
   async deleteCategory(id: number): Promise<void> {

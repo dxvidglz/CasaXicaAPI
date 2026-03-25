@@ -6,16 +6,12 @@ import { handleSupabaseError } from '../../utils/error.handler';
 export class CategorySupabaseRepository implements ICategoryRepository {
   constructor(private readonly supabase: SupabaseClient) {}
 
-  async createCategory(dto: CreateCategoryDto): Promise<Category> {
-    const { data, error } = await this.supabase
+  async createCategory(dto: CreateCategoryDto): Promise<void> {
+    const { error } = await this.supabase
       .from('categories')
-      .insert({ name: dto.name })
-      .select()
-      .single();
+      .insert({ name: dto.name });
 
     if (error) handleSupabaseError(error, 'Error creando la categoría en base de datos');
-
-    return this.mapToDomain(data);
   }
 
   async getCategoryById(id: number): Promise<Category | null> {
@@ -44,17 +40,13 @@ export class CategorySupabaseRepository implements ICategoryRepository {
     return (data || []).map(row => this.mapToDomain(row));
   }
 
-  async updateCategory(id: number, dto: UpdateCategoryDto): Promise<Category> {
-    const { data, error } = await this.supabase
+  async updateCategory(id: number, dto: UpdateCategoryDto): Promise<void> {
+    const { error } = await this.supabase
       .from('categories')
       .update({ name: dto.name })
-      .eq('id', id)
-      .select()
-      .single();
+      .eq('id', id);
 
     if (error) handleSupabaseError(error, 'Error actualizando la categoría');
-
-    return this.mapToDomain(data);
   }
 
   async deleteCategory(id: number): Promise<void> {

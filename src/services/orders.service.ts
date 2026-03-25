@@ -5,9 +5,8 @@ export class OrdersService {
     private readonly orderRepository: IOrderRepository
   ) {}
 
-  async createOrder(orderDto: CreateOrderDto): Promise<Order> {
-    const newOrder = await this.orderRepository.createOrder(orderDto);
-    return newOrder;
+  async createOrder(orderDto: CreateOrderDto): Promise<void> {
+    await this.orderRepository.createOrder(orderDto);
   }
 
   async getOrderById(id: string): Promise<Order | null> {
@@ -18,8 +17,7 @@ export class OrdersService {
     return this.orderRepository.getOrdersByStatus(status);
   }
 
-  async updateOrderItemStatus(orderId: string, itemId: string, status: ItemStatus): Promise<Order> {    
-    const updatedOrder = await this.orderRepository.updateOrderItemStatus(orderId, itemId, status);
-    return updatedOrder;
+  async updateOrderItemStatus(orderId: string, itemId: string, status: ItemStatus): Promise<void> {    
+    await this.orderRepository.updateOrderItemStatus(orderId, itemId, status);
   }
 }

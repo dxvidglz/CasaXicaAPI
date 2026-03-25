@@ -6,20 +6,16 @@ import { handleSupabaseError } from '../../utils/error.handler';
 export class TransactionSupabaseRepository implements ITransactionRepository {
   constructor(private readonly supabase: SupabaseClient) {}
 
-  async createTransaction(dto: CreateTransactionDto): Promise<Transaction> {
-    const { data, error } = await this.supabase
+  async createTransaction(dto: CreateTransactionDto): Promise<void> {
+    const { error } = await this.supabase
       .from('transactions')
       .insert({
         order_id: dto.orderId,
         payment_method: dto.paymentMethod,
         amount_paid: dto.amountPaid,
-      })
-      .select()
-      .single();
+      });
 
     if (error) handleSupabaseError(error, 'Error al procesar la transacción');
-
-    return this.mapToDomain(data);
   }
 
   async getTransactionById(id: number): Promise<Transaction | null> {
@@ -55,6 +51,7 @@ export class TransactionSupabaseRepository implements ITransactionRepository {
       orderId: row.order_id,
       paymentMethod: row.payment_method,
       amountPaid: row.amount_paid,
+      change: row.change,
       ticketFolio: row.ticket_folio,
       paidAt: row.paid_at
     };

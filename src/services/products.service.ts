@@ -10,8 +10,8 @@ export class ProductsService {
     private readonly redis: Redis
   ) {}
 
-  async createProduct(dto: CreateProductDto): Promise<Product> {
-    return this.repository.createProduct(dto);
+  async createProduct(dto: CreateProductDto): Promise<void> {
+    await this.repository.createProduct(dto);
   }
 
   async getProductById(id: string): Promise<Product | null> {
@@ -38,8 +38,8 @@ export class ProductsService {
     return products;
   }
 
-  async updateProduct(id: string, dto: UpdateProductDto): Promise<Product> {
-    return this.repository.updateProduct(id, dto);
+  async updateProduct(id: string, dto: UpdateProductDto): Promise<void> {
+    await this.repository.updateProduct(id, dto);
   }
 
   async deleteProduct(id: string): Promise<void> {

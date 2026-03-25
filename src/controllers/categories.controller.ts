@@ -12,8 +12,8 @@ export class CategoriesController {
       if (!body.name) {
          throw new AppError('El nombre (name) es obligatorio', 400);
       }
-      const result = await this.categoriesService.createCategory(body);
-      return c.json({ data: result }, 201);
+      await this.categoriesService.createCategory(body);
+      return c.json({ success: true }, 201);
     } catch (error: any) {
       return handleApiError(c, error);
     }
@@ -54,8 +54,8 @@ export class CategoriesController {
       const body = await c.req.json<UpdateCategoryDto>();
       if (!body.name) throw new AppError('El nombre es requerido para actualizar', 400);
 
-      const result = await this.categoriesService.updateCategory(id, body);
-      return c.json({ data: result }, 200);
+      await this.categoriesService.updateCategory(id, body);
+      return c.json({ success: true }, 200);
     } catch (error: any) {
       return handleApiError(c, error);
     }

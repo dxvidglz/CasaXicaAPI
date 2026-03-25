@@ -6,7 +6,7 @@ import { handleSupabaseError } from '../../utils/error.handler';
 export class ProductSupabaseRepository implements IProductRepository {
   constructor(private readonly supabase: SupabaseClient) {}
 
-  async createProduct(dto: CreateProductDto): Promise<Product> {
+  async createProduct(dto: CreateProductDto): Promise<void> {
     const { data: productData, error: productError } = await this.supabase
       .from('products')
       .insert({
@@ -15,10 +15,11 @@ export class ProductSupabaseRepository implements IProductRepository {
         price: dto.price,
         available: dto.available ?? true
       })
-      .select()
+      .select('id')
       .single();
 
     if (productError) handleSupabaseError(productError, 'Error creating product');
+    if (!productData) return;
 
     if (dto.variants && dto.variants.length > 0) {
       const variantsPayload = dto.variants.map((v: any) => ({
@@ -34,8 +35,6 @@ export class ProductSupabaseRepository implements IProductRepository {
 
       if (variantError) handleSupabaseError(variantError, 'Error creating product variants');
     }
-
-    return this.getProductById(productData.id) as Promise<Product>;
   }
 
   async getProductById(id: string): Promise<Product | null> {
@@ -77,7 +76,7 @@ export class ProductSupabaseRepository implements IProductRepository {
     return (data || []).map(row => this.mapToDomain(row));
   }
 
-  async updateProduct(id: string, dto: UpdateProductDto): Promise<Product> {
+  async updateProduct(id: string, dto: UpdateProductDto): Promise<void> {
     const updatePayload: any = {};
     if (dto.name !== undefined) updatePayload.name = dto.name;
     if (dto.price !== undefined) updatePayload.price = dto.price;
@@ -90,8 +89,6 @@ export class ProductSupabaseRepository implements IProductRepository {
       .eq('id', id);
 
     if (error) handleSupabaseError(error, 'Error updating product');
-
-    return this.getProductById(id) as Promise<Product>;
   }
 
   async deleteProduct(id: string): Promise<void> {
