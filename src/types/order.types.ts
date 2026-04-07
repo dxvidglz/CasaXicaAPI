@@ -4,12 +4,14 @@ export type ItemStatus = 'PENDING' | 'PREPARING' | 'READY' | 'DELIVERED' | 'CANC
 export interface OrderItemVariant {
   id?: number;
   variantId: string;
+  name: string;
   price: number;
 }
 
 export interface OrderItem {
   id?: number;
   productId: string;
+  name: string;
   notes?: string;
   unitPrice: number;
   status?: ItemStatus;
@@ -20,7 +22,8 @@ export interface Order {
   id: string;
   dailyFolio?: number;
   tableNumber?: string;
-  waiterId?: string;
+  waiterId: string;
+  waiterName: string;
   items?: OrderItem[];
   status: OrderStatus;
   total: number;

@@ -89,12 +89,23 @@ export class OrderSupabaseRepository implements IOrderRepository {
     return this.mapToDomain(data);
   }
 
-  async getOrdersByStatus(status: OrderStatus): Promise<Order[]> {
-    const { data, error } = await this.supabase
+  async getOrdersByStatus(status?: OrderStatus, userRole?: string): Promise<Order[]> {
+    let query = this.supabase
       .from('orders')
       .select('*')
-      .eq('status', status)
       .order('created_at', { ascending: true });
+
+    if (status) {
+      query = query.eq('status', status);
+    } 
+    else if (userRole !== 'ADMIN') {
+      const startOfDay = new Date();
+      startOfDay.setHours(6, 0, 0, 0); // Desde las 12:00 AM
+      query = query.gte('created_at', startOfDay.toISOString());
+      // query = query.neq('status', 'CLOSED');
+    }
+
+    const { data, error } = await query;
 
     if (error) {
       handleSupabaseError(error, 'Error al listar orders');
@@ -125,6 +136,7 @@ export class OrderSupabaseRepository implements IOrderRepository {
       dailyFolio: row.daily_folio,
       ...(row.table_number != null && { tableNumber: row.table_number }),
       waiterId: row.waiter_id,
+      waiterName: row.waiter_name,
       status: row.status as OrderStatus,
       total: row.total,
       totalItems: row.total_items,
@@ -135,12 +147,14 @@ export class OrderSupabaseRepository implements IOrderRepository {
           const variants = (detail.order_item_variants || []).map((v: any) => ({
             id: v.id,
             variantId: v.variant_id,
+            name: v.variant_name,
             price: v.price
           }));
 
           return {
             id: detail.id,
             productId: detail.product_id,
+            name: detail.product_name,
             ...(detail.notes != null && { notes: detail.notes }),
             unitPrice: detail.unit_price,
             status: detail.status as ItemStatus,

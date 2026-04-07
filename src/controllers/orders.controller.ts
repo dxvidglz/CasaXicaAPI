@@ -36,13 +36,34 @@ export class OrdersController {
 
   async getOrdersByStatus(c: Context) {
     try {
-      const status = c.req.query('status') as OrderStatus;
+      const status = c.req.query('status') as OrderStatus | undefined;
       
-      if (!status) {
-         throw new AppError('Status query parameter is required', 400);
+      let userRole = 'WAITER'; // Rol seguro por defecto
+
+      const authHeader = c.req.header('Authorization');
+      if (authHeader) {
+        const token = authHeader.replace('Bearer ', '');
+        
+        // Creamos un cliente anónimo puro para validar al user
+        const { createClient } = require('@supabase/supabase-js');
+        const anonSupabase = createClient(c.env.SUPABASE_URL, c.env.SUPABASE_KEY);
+
+        // Supabase valida el jwt automáticamente
+        const { data: authData } = await anonSupabase.auth.getUser(token);
+        
+        if (authData?.user) {
+           // Buscamos su rol en tu tabla externa 'users'
+           const { data: userData } = await anonSupabase
+              .from('users')
+              .select('role')
+              .eq('id', authData.user.id)
+              .single();
+              
+           if (userData) userRole = userData.role;
+        }
       }
 
-      const result = await this.ordersService.getOrdersByStatus(status);
+      const result = await this.ordersService.getOrdersByStatus(status, userRole);
       return c.json({ data: result }, 200);
     } catch (error: any) {
       return handleApiError(c, error);

@@ -13,8 +13,8 @@ export class OrdersService {
     return this.orderRepository.getOrderById(id);
   }
 
-  async getOrdersByStatus(status: OrderStatus): Promise<Order[]> {
-    return this.orderRepository.getOrdersByStatus(status);
+  async getOrdersByStatus(status?: OrderStatus, userRole?: string): Promise<Order[]> {
+    return this.orderRepository.getOrdersByStatus(status, userRole);
   }
 
   async updateOrderItemStatus(orderId: string, itemId: string, status: ItemStatus): Promise<void> {    
