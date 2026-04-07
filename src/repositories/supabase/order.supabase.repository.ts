@@ -127,6 +127,7 @@ export class OrderSupabaseRepository implements IOrderRepository {
       waiterId: row.waiter_id,
       status: row.status as OrderStatus,
       total: row.total,
+      totalItems: row.total_items,
       createdAt: row.created_at,
       updatedAt: row.updated_at,
       ...(row.order_items && {
