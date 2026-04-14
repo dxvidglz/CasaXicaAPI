@@ -1,6 +1,6 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 import { ITransactionRepository } from '../interfaces/transaction.repository.interface';
-import { Transaction, CreateTransactionDto } from '../../types';
+import { Transaction, TicketItemSummary, CreateTransactionDto } from '../../types';
 import { handleSupabaseError } from '../../utils/error.handler';
 
 export class TransactionSupabaseRepository implements ITransactionRepository {
@@ -34,15 +34,37 @@ export class TransactionSupabaseRepository implements ITransactionRepository {
   }
 
   async getTransactionsByOrderId(orderId: string): Promise<Transaction[]> {
-    const { data, error } = await this.supabase
-      .from('transactions')
-      .select('*')
-      .eq('order_id', orderId)
-      .order('paid_at', { ascending: false });
+    const [transactionsResult, itemsResult] = await Promise.all([
+      this.supabase
+        .from('transactions')
+        .select('*')
+        .eq('order_id', orderId)
+        .order('paid_at', { ascending: false }),
+      this.supabase
+        .from('ticket_items_summary')
+        .select('*')
+        .eq('order_id', orderId),
+    ]);
 
-    if (error) handleSupabaseError(error, 'Error listando transacciones de la orden');
+    if (transactionsResult.error)
+      handleSupabaseError(transactionsResult.error, 'Error listando transacciones de la orden');
+    if (itemsResult.error)
+      handleSupabaseError(itemsResult.error, 'Error obteniendo items del ticket');
 
-    return (data || []).map(row => this.mapToDomain(row));
+    const items: TicketItemSummary[] = (itemsResult.data || []).map(
+      (item: any): TicketItemSummary => ({
+        quantity: item.quantity,
+        productName: item.product_name,
+        variantsDescription: item.variants_description,
+        unitTotalPrice: item.unit_total_price,
+        subtotal: item.subtotal,
+      })
+    );
+
+    return (transactionsResult.data || []).map(row => ({
+      ...this.mapToDomain(row),
+      items,
+    }));
   }
 
   private mapToDomain(row: any): Transaction {
@@ -50,6 +72,7 @@ export class TransactionSupabaseRepository implements ITransactionRepository {
       id: row.id,
       orderId: row.order_id,
       paymentMethod: row.payment_method,
+      total: row.total,
       amountPaid: row.amount_paid,
       change: row.change,
       ticketFolio: row.ticket_folio,
