@@ -1,6 +1,6 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 import { IOrderRepository } from '../interfaces/order.repository.interface';
-import { Order, CreateOrderDto, OrderStatus, ItemStatus } from '../../types';
+import { Order, CreateOrderDto, OrderStatus, ItemStatus, AddOrderItemDto } from '../../types';
 import { handleSupabaseError } from '../../utils/error.handler';
 
 export class OrderSupabaseRepository implements IOrderRepository {
@@ -100,7 +100,7 @@ export class OrderSupabaseRepository implements IOrderRepository {
     } 
     else if (userRole !== 'ADMIN') {
       const startOfDay = new Date();
-      startOfDay.setHours(6, 0, 0, 0); // Desde las 12:00 AM
+      startOfDay.setHours(6, 0, 0, 0); // Desde las 12:00 AM America/Mexico_City
       query = query.gte('created_at', startOfDay.toISOString());
       // query = query.neq('status', 'CLOSED');
     }
@@ -123,6 +123,39 @@ export class OrderSupabaseRepository implements IOrderRepository {
 
     if (error) {
       handleSupabaseError(error, 'Error al actualizar estado del detalle de la orden');
+    }
+  }
+
+  async addItemToOrder(dto: AddOrderItemDto): Promise<void> {
+    const { data: itemData, error: itemError } = await this.supabase
+      .from('order_items')
+      .insert({
+        order_id: dto.orderId,
+        product_id: dto.item.productId,
+        notes: dto.item.notes ?? null,
+      })
+      .select('id')
+      .single();
+
+    if (itemError) {
+      handleSupabaseError(itemError, 'Error al agregar item a la orden');
+    }
+    if (!itemData) return;
+
+    // Insertar variantes si existen
+    if (dto.item.variantIds && dto.item.variantIds.length > 0) {
+      const variantsPayload = dto.item.variantIds.map(variantId => ({
+        order_item_id: itemData.id,
+        variant_id: variantId,
+      }));
+
+      const { error: variantsError } = await this.supabase
+        .from('order_item_variants')
+        .insert(variantsPayload);
+
+      if (variantsError) {
+        handleSupabaseError(variantsError, 'Error al insertar variantes del nuevo item');
+      }
     }
   }
 

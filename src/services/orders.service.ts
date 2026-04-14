@@ -1,5 +1,5 @@
 import { IOrderRepository } from '../repositories/interfaces/order.repository.interface';
-import { Order, CreateOrderDto, OrderStatus, ItemStatus } from '../types';
+import { Order, CreateOrderDto, OrderStatus, ItemStatus, AddOrderItemDto } from '../types';
 export class OrdersService {
   constructor(
     private readonly orderRepository: IOrderRepository
@@ -19,5 +19,9 @@ export class OrdersService {
 
   async updateOrderItemStatus(orderId: string, itemId: string, status: ItemStatus): Promise<void> {    
     await this.orderRepository.updateOrderItemStatus(orderId, itemId, status);
+  }
+
+  async addItemToOrder(dto: AddOrderItemDto): Promise<void> {
+    await this.orderRepository.addItemToOrder(dto);
   }
 }

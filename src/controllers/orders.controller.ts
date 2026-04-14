@@ -1,5 +1,5 @@
 import { Context } from 'hono';
-import { CreateOrderDto, OrderStatus, ItemStatus } from '../types';
+import { CreateOrderDto, OrderStatus, ItemStatus, CreateOrderItemDto } from '../types';
 import { OrdersService } from '../services/orders.service';
 import { handleApiError, AppError } from '../utils/error.handler';
 
@@ -84,6 +84,24 @@ export class OrdersController {
 
       await this.ordersService.updateOrderItemStatus(orderId, itemId, body.status);
       return c.json({ success: true }, 200);
+    } catch (error: any) {
+      return handleApiError(c, error);
+    }
+  }
+
+  async addItemToOrder(c: Context) {
+    try {
+      const orderId = c.req.param('orderId');
+      if (!orderId) throw new AppError('Order ID is required', 400);
+
+      const body = await c.req.json<CreateOrderItemDto>();
+
+      if (!body?.productId) {
+        throw new AppError('productId is required', 400);
+      }
+
+      await this.ordersService.addItemToOrder({ orderId, item: body });
+      return c.json({ success: true }, 201);
     } catch (error: any) {
       return handleApiError(c, error);
     }

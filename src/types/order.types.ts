@@ -38,6 +38,11 @@ export interface CreateOrderItemDto {
   variantIds?: string[];
 }
 
+export interface AddOrderItemDto {
+  orderId: string;
+  item: CreateOrderItemDto;
+}
+
 export interface CreateOrderDto {
   tableNumber?: string;
   waiterId: string;

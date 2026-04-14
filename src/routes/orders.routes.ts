@@ -26,6 +26,7 @@ ordersApp.use('*', async (c, next) => {
 });
 
 ordersApp.post('/', (c) => c.get('ordersController').createOrder(c));
+ordersApp.post('/:orderId/items', (c) => c.get('ordersController').addItemToOrder(c));
 ordersApp.get('/', (c) => c.get('ordersController').getOrdersByStatus(c));
 ordersApp.get('/:id', (c) => c.get('ordersController').getOrderById(c));
 ordersApp.patch('/:orderId/items/:itemId/status', (c) => c.get('ordersController').updateOrderItemStatus(c));
