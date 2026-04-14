@@ -19,7 +19,7 @@ export interface AuthLoginDto {
 export interface AuthRegisterDto {
   email: string;
   password: string;
-  name?: string;
+  name: string;
 }
 
 export interface AuthResetPasswordDto {
@@ -27,9 +27,14 @@ export interface AuthResetPasswordDto {
 }
 
 export interface AuthUpdatePasswordDto {
+  access_token?: string;
   password: string;
 }
 
 export interface AuthRefreshTokenDto {
   refresh_token: string;
+}
+
+export interface AuthUpdateMetadataDto {
+  name: string;
 }

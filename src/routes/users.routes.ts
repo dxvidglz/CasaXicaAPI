@@ -29,6 +29,7 @@ usersApp.post('/register', (c) => c.get('usersController').register(c));
 usersApp.post('/login', (c) => c.get('usersController').login(c));
 usersApp.post('/refresh', (c) => c.get('usersController').refreshToken(c));
 usersApp.post('/reset-password', (c) => c.get('usersController').resetPassword(c));
+usersApp.post('/reset-password-by-token', (c) => c.get('usersController').resetPasswordByToken(c));
 
 // ============================================
 // 3. RUTAS PROTEGIDAS (requieren JWT válido)
@@ -36,9 +37,11 @@ usersApp.post('/reset-password', (c) => c.get('usersController').resetPassword(c
 usersApp.use('/me', authMiddleware);
 usersApp.use('/logout', authMiddleware);
 usersApp.use('/update-password', authMiddleware);
+usersApp.use('/update-metadata', authMiddleware);
 
 usersApp.get('/me', (c) => c.get('usersController').getMe(c));
 usersApp.post('/logout', (c) => c.get('usersController').logout(c));
 usersApp.post('/update-password', (c) => c.get('usersController').updatePassword(c));
+usersApp.patch('/update-metadata', (c) => c.get('usersController').updateMetadata(c));
 
 export default usersApp;

@@ -26,7 +26,7 @@ export class AuthService {
       email: dto.email,
       password: dto.password,
       options: {
-        data: { name: dto.name ?? '' },
+        data: { name: dto.name },
         emailRedirectTo: 'http://localhost:5173',
       },
     });
@@ -62,7 +62,8 @@ export class AuthService {
     });
 
     if (error) {
-      throw new AppError(error.message, 401, error);
+      const translatedMessage = error?.code === 'invalid_credentials' ? 'Correo o contraseña incorrecta' : error.message || error?.code === 'email_not_confirmed' ? 'Correo no confirmado. Revisa tu bandeja de entrada.' : error.message;
+      throw new AppError(translatedMessage, 401, error);
     }
 
     return {
@@ -71,6 +72,7 @@ export class AuthService {
         email: data.user.email,
         role: data.user.role,
         last_sign_in_at: data.user.last_sign_in_at,
+        user_metadata: data.user.user_metadata,
       },
       session: {
         access_token: data.session.access_token,
@@ -115,7 +117,9 @@ export class AuthService {
   // ───────────────────────── Reset Password (envía email) ─────────────────────────
 
   async resetPassword(email: string) {
-    const { error } = await this.supabase.auth.resetPasswordForEmail(email);
+    const { error } = await this.supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: 'exp://192.168.1.67:8081/--/update-password',
+    });
 
     if (error) {
       throw new AppError(error.message, 400, error);
@@ -133,4 +137,28 @@ export class AuthService {
       throw new AppError(error.message, 400, error);
     }
   }
+
+  // ───────────────────────── Update Forgot Password ─────────────────────────
+
+  async resetPasswordByToken(access_token: string, newPassword: string) {
+   const { data: { user }, error: authError } = await this.supabase.auth.getUser(access_token);
+   if (authError || !user) throw new AppError("Token inválido o expirado");
+
+   await this.updatePassword(user.id, newPassword);
+  }
+
+  // ───────────────────────── Update Metadata ─────────────────────────
+
+  async updateUserMetadata(userId: string, metadata: { name: string }) {
+    const { data, error } = await this.supabase.auth.admin.updateUserById(userId, {
+      user_metadata: metadata,
+    });
+
+    if (error) {
+      throw new AppError(error.message, 400, error);
+    }
+
+    return data.user;
+  }
+
 }

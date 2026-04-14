@@ -7,6 +7,7 @@ import {
   AuthRefreshTokenDto,
   AuthResetPasswordDto,
   AuthUpdatePasswordDto,
+  AuthUpdateMetadataDto,
 } from '../types';
 
 export class UsersController {
@@ -124,6 +125,23 @@ export class UsersController {
     }
   }
 
+  // ─────────────── POST /auth/reset-password-by-token ───────────────
+
+  async resetPasswordByToken(c: Context) {
+    try {
+      const body = await c.req.json<AuthUpdatePasswordDto>();
+
+      if (!body.access_token || !body.password) {
+        throw new AppError('El token y la nueva contraseña son obligatorios', 400);
+      }
+
+      await this.authService.resetPasswordByToken(body.access_token, body.password);
+      return c.json({ data: { message: 'Contraseña actualizada correctamente' } }, 200);
+    } catch (error: any) {
+      return handleApiError(c, error);
+    }
+  }
+
   // ─────────────── GET /auth/me  (protegida) ───────────────
 
   async getMe(c: Context) {
@@ -141,6 +159,42 @@ export class UsersController {
             email: user.email,
             auth_role: user.role,
             last_sign_in_at: user.last_sign_in_at,
+          },
+        },
+        200,
+      );
+    } catch (error: any) {
+      return handleApiError(c, error);
+    }
+  }
+
+  // ─────────────── PATCH /auth/update-metadata (protegida) ───────────────
+
+  async updateMetadata(c: Context) {
+    try {
+      const body = await c.req.json<AuthUpdateMetadataDto>();
+
+      if (!body.name) {
+        throw new AppError('El nombre es obligatorio', 400);
+      }
+
+      const user = c.get('authUser');
+
+      if (!user) {
+        throw new AppError('Usuario no encontrado o no autenticado', 401);
+      }
+
+      const updatedUser = await this.authService.updateUserMetadata(user.id, { name: body.name });
+
+      return c.json(
+        {
+          data: {
+            message: 'Metadatos actualizados correctamente',
+            user: {
+              id: updatedUser?.id,
+              email: updatedUser?.email,
+              user_metadata: updatedUser?.user_metadata,
+            },
           },
         },
         200,
