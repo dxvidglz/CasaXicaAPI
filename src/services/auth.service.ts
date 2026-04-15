@@ -27,7 +27,7 @@ export class AuthService {
       password: dto.password,
       options: {
         data: { name: dto.name },
-        emailRedirectTo: 'http://localhost:5173',
+        emailRedirectTo: 'casaxica://',
       },
     });
 
@@ -118,7 +118,7 @@ export class AuthService {
 
   async resetPassword(email: string) {
     const { error } = await this.supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: 'exp://192.168.1.67:8081/--/update-password',
+      redirectTo: 'casaxica://--/update-password',
     });
 
     if (error) {
