@@ -57,6 +57,14 @@ webhooksApp.post('/supabase', async (c) => {
              await redis.del(`products:category:${oldCategoryId}`);
          }
       }
+    } else if (table === 'product_variants') {
+      const productId = record.product_id || record.productId;
+
+      await redis.del(`products:category:all`);
+
+      if (productId) {
+        await redis.del(`product:${productId}`);
+      }
     }
 
     return c.json({ success: true, message: `Cache invalidated for table ${table}` }, 200);
