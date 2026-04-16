@@ -118,7 +118,7 @@ export class AuthService {
 
   async resetPassword(email: string) {
     const { error } = await this.supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: 'casaxica://--/update-password',
+      redirectTo: 'casaxica://update-password',
     });
 
     if (error) {
