@@ -11,7 +11,7 @@ export class ProductSupabaseRepository implements IProductRepository {
       .from('products')
       .insert({
         category_id: dto.categoryId,
-        name: dto.name,
+        name: dto.name.toUpperCase(),
         price: dto.price,
         available: dto.available ?? true
       })
@@ -22,7 +22,7 @@ export class ProductSupabaseRepository implements IProductRepository {
     if (!productData) return;
 
     if (dto.variants && dto.variants.length > 0) {
-      const variantsPayload = dto.variants.map((v: any) => ({
+      const variantsPayload = dto.variants.map((v) => ({
         product_id: productData.id,
         name: v.name,
         price_override: v.priceOverride,
@@ -77,21 +77,42 @@ export class ProductSupabaseRepository implements IProductRepository {
   }
 
   async updateProduct(id: string, dto: UpdateProductDto): Promise<void> {
-    const updatePayload: any = {};
+    const updatePayload: Record<string, unknown> = {};
     if (dto.name !== undefined) updatePayload.name = dto.name;
     if (dto.price !== undefined) updatePayload.price = dto.price;
     if (dto.categoryId !== undefined) updatePayload.category_id = dto.categoryId;
     if (dto.available !== undefined) updatePayload.available = dto.available;
 
-    const { error } = await this.supabase
-      .from('products')
-      .update(updatePayload)
-      .eq('id', id);
+    if (Object.keys(updatePayload).length > 0) {
+      const { error } = await this.supabase
+        .from('products')
+        .update(updatePayload)
+        .eq('id', id);
+      if (error) handleSupabaseError(error, 'Error updating product');
+    }
 
-    if (error) handleSupabaseError(error, 'Error updating product');
+    // Upsert de variantes: con id se actualizan, sin id se insertan.
+    // La disponibilidad (available) la gestiona el frontend directamente.
+    if (dto.variants !== undefined && dto.variants.length > 0) {
+      const variantsPayload = dto.variants.map((v) => ({
+        ...(v.id && { id: v.id }),
+        product_id: id,
+        name: v.name,
+        price_override: v.priceOverride,
+        available: v.available ?? true
+      }));
+
+      const { error: variantError } = await this.supabase
+        .from('product_variants')
+        .upsert(variantsPayload);
+      if (variantError) handleSupabaseError(variantError, 'Error updating product variants');
+    }
   }
 
   async deleteProduct(id: string): Promise<void> {
+    // product_variants se eliminan automáticamente por ON DELETE CASCADE.
+    // Si el producto tiene order_items, el FK sin CASCADE impedirá la eliminación
+    // y Supabase retornará un error que handleSupabaseError propagará.
     const { error } = await this.supabase.from('products').delete().eq('id', id);
     if (error) handleSupabaseError(error, 'Error deleting product');
   }

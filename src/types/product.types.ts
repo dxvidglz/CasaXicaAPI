@@ -33,4 +33,17 @@ export interface CreateProductDto {
   variants?: CreateProductVariantDto[];
 }
 
-export interface UpdateProductDto extends Partial<CreateProductDto> {}
+export interface UpdateProductVariantDto {
+  id?: string; // Presente para variantes existentes, ausente para nuevas
+  name: string;
+  priceOverride: number;
+  available?: boolean;
+}
+
+export interface UpdateProductDto {
+  categoryId?: number;
+  name?: string;
+  price?: number;
+  available?: boolean;
+  variants?: UpdateProductVariantDto[];
+}
